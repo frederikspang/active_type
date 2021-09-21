@@ -47,6 +47,10 @@ module UtilSpec
   end
 
   class ExtendedCar < ActiveType::Record[Car]
+    class ExtendedSteeringWheel < SteeringWheel
+    end
+
+    change_association :steering_wheel, class_name: 'ExtendedCar::ExtendedSteeringWheel'
   end
 
 end
@@ -174,6 +178,14 @@ describe ActiveType::Util do
         extended_car = ActiveType.cast(car, UtilSpec::ExtendedCar)
         expect(extended_car.wheels.first).to eq wheel
         expect(extended_car.steering_wheel).to eq steering_wheel
+      end
+
+      it 'does not loose its changed associations' do
+        car = UtilSpec::Car.create!
+        UtilSpec::SteeringWheel.create!(car: car)
+
+        extended_car = ActiveType::Util.cast(car, UtilSpec::ExtendedCar)
+        expect(extended_car.steering_wheel).to be_a(UtilSpec::ExtendedCar::ExtendedSteeringWheel)
       end
     end
 
