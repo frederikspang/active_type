@@ -37,6 +37,12 @@ module ActiveType
         # Rails 5.2+
         casted.instance_variable_set(:@mutations_from_database, record.instance_variable_get(:@mutations_from_database))
 
+        # das hier macht die Probleme! => Rails will dann unseren durch cast erzeugten Record ebenfalls auto-speichern, der hat aber die gleiche ID wie der schon gespeicherte
+        # Warum wird beim Speichern probiert, einen neuen Datenbankeintrag zu erstellen, statt den bereits bestehenden wieder zu updaten - das würde doch mehr Sinn machen?
+        #
+        # => wir könnten Referenz halten auf ursprungsrecord und new_record? dort hin delegieren
+        #    Aber: Reicht das? Wenn zuerst der gecastete Record gespeichert wird, müsste ja der new_record state vom Ursprungsrecord angepasst werden.
+        binding.pry
         casted.instance_variable_set(:@association_cache, record.instance_variable_get(:@association_cache))
 
         # Rails 3.2, 4.2

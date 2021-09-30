@@ -37,6 +37,7 @@ database.rewrite_schema! do
   end
 
   create_table :cars do |t|
+    t.integer :status
   end
 
   create_table :wheels do |t|

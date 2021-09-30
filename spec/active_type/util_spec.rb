@@ -1,4 +1,8 @@
 require 'spec_helper'
+require 'pry'
+require 'logger'
+
+ActiveRecord::Base.logger = Logger.new(STDOUT)
 
 module UtilSpec
 
@@ -34,12 +38,33 @@ module UtilSpec
   end
 
   class Car < ActiveRecord::Base
-    has_many :wheels
+    has_many :wheels, inverse_of: :car #, autosave: false
     has_one :steering_wheel
+
+    def save!
+      binding.pry
+      super
+    end
+
+    def change_status
+      self.status = 10
+    end
   end
 
   class Wheel < ActiveRecord::Base
-    belongs_to :car
+    belongs_to :car, inverse_of: :wheels
+    after_save :update_car_status # <= after save, ein wheel ist also schon gespeichert
+
+    private
+
+    def update_car_status
+      car.change_status
+      puts "<<<< before car.save!"
+      # binding.pry
+      car.save! #-> das saved auch den Kind-Record
+      puts "<<<< after car.save!"
+    end
+
   end
 
   class SteeringWheel <ActiveRecord::Base
@@ -49,12 +74,12 @@ module UtilSpec
   class ExtendedCar < ActiveType::Record[Car]
   end
 
+  class ExtendedWheel < ActiveType::Record[Wheel]
+  end
 end
 
 describe ActiveType::Util do
-
   describe '.cast' do
-
     describe 'for a relation' do
 
       it 'casts a scope to a scope of another class' do
@@ -79,6 +104,26 @@ describe ActiveType::Util do
     end
 
     describe 'for a record type' do
+
+      context 'TODO' do
+        it 'works without Active Type' do
+          car = UtilSpec::Car.create
+
+          native_wheel = car.wheels.build
+          native_wheel.save!
+        end
+
+        it 'works with Active Type' do
+          car = UtilSpec::Car.create
+
+          new_wheel = car.wheels.build
+
+          casted_new_wheel = ActiveType.cast(new_wheel, UtilSpec::ExtendedWheel)
+          puts "<<<< after cast"
+          casted_new_wheel.save!
+          puts "<<<< after save!"
+        end
+      end
 
       it 'casts a base record to an extended record' do
         base_record = UtilSpec::BaseRecord.create!(:persisted_string => 'foo')
